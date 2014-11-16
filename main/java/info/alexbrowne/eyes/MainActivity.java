@@ -137,6 +137,7 @@ public class MainActivity extends Activity {
         Log.i(TAG, "smallestSize: " + smallestSize.width + ", " + smallestSize.height);
         parameters.setPictureSize(smallestSize.width, smallestSize.height);
         parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+        mCamera.setParameters(parameters);
 
         // Create our Preview view and set it as the content of our activity.
         mPreview = new CameraPreview(this, mCamera);
