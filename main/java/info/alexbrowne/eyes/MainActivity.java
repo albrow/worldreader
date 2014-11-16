@@ -17,7 +17,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
 
-import org.apache.commons.codec.binary.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -51,7 +50,7 @@ public class MainActivity extends Activity {
 
     private Speaker speaker;
 
-    private final double CONFIDENCE_THRESHHOLD = 0.03;
+    private final double CONFIDENCE_THRESHOLD = 0.03;
 
     StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
 
@@ -268,10 +267,15 @@ public class MainActivity extends Activity {
             JSONObject result = jObject.getJSONArray("files").getJSONObject(0);
             JSONArray values = result.getJSONArray("predicted_classes");
             JSONArray confidences = result.getJSONArray("predicted_probs");
+            double prevConfidence = 0.0;
             for (int i = 0; i < values.length(); i++) {
                 Guess guess = new Guess(values.getString(i), confidences.getString(i));
-                if (guess.getConfidence() >= CONFIDENCE_THRESHHOLD) {
+                double c = guess.getConfidence();
+                if (c >= CONFIDENCE_THRESHOLD && c >= prevConfidence*0.5)  {
+                    // Add to our guesses iff confidence for this guess is over some
+                    // threshold and this guess is at least half as likely 
                     topGuesses.add(guess);
+                    prevConfidence = c;
                 }
             }
         } catch (JSONException e) {
