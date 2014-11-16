@@ -2,6 +2,7 @@ package info.alexbrowne.eyes;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.os.Bundle;
@@ -23,6 +24,7 @@ import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -42,7 +44,11 @@ public class MainActivity extends Activity {
     public static final int MEDIA_TYPE_IMAGE = 1;
     public static final int MEDIA_TYPE_VIDEO = 2;
 
+    private final int CHECK_CODE = 0x1;
+
     private TextToSpeech tts;
+
+    private Speaker speaker;
 
     StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
 
@@ -79,12 +85,35 @@ public class MainActivity extends Activity {
                     }
                 }
         );
+
+        // Check if a TTS engine is installed
+        checkTTS();
+    }
+
+    private void checkTTS(){
+        Intent check = new Intent();
+        check.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
+        startActivityForResult(check, CHECK_CODE);
     }
 
     @Override
-    protected void onPause() {
-        super.onPause();
-        releaseCamera();              // release the camera immediately on pause event
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if(requestCode == CHECK_CODE){
+            if(resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS){
+                speaker = new Speaker(this);
+            }else {
+                Intent install = new Intent();
+                install.setAction(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
+                startActivity(install);
+            }
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        speaker.destroy();
+        releaseCamera();
     }
 
 
@@ -179,16 +208,6 @@ public class MainActivity extends Activity {
         return mediaFile;
     }
 
-    @Override
-    public void onDestroy() {
-        // Don't forget to shutdown tts!
-        if (tts != null) {
-            tts.stop();
-            tts.shutdown();
-        }
-        super.onDestroy();
-    }
-
     /** A safe way to get an instance of the Camera object. */
     public static Camera getCameraInstance(){
         Camera c = null;
@@ -209,6 +228,7 @@ public class MainActivity extends Activity {
     }
 
     private void postImage(File imageFile) {
+        String rawData = "";
         try {
             HttpClient httpClient = new DefaultHttpClient();
             HttpPost postRequest = new HttpPost(
@@ -227,16 +247,33 @@ public class MainActivity extends Activity {
             while ((sResponse = reader.readLine()) != null) {
                 s = s.append(sResponse);
             }
-            Log.d(TAG, "Response: " + s);
-            JSONObject jObject = new JSONObject(s.toString());
+            rawData = s.toString();
+            Log.d(TAG, "Response: " + rawData);
+        } catch (Exception e) {
+            // handle exception here
+            Log.e(TAG, "Error posting image file: " + e.getMessage());
+        }
+
+        JSONObject jObject = null;
+        try {
+            jObject = new JSONObject(rawData);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        String topGuess = "";
+        try {
             JSONArray guesses = jObject.getJSONArray("files").getJSONObject(0).getJSONArray("predicted_classes");
             for (int i = 0; i < guesses.length(); i++) {
                 String guess = guesses.getString(i);
                 Log.e(TAG, guess);
             }
-        } catch (Exception e) {
-            // handle exception here
-            Log.e(TAG, "Error posting image file: " + e.getMessage());
+            topGuess = guesses.getString(0);
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
+
+        // Speak the first result
+        speaker.allow(true);
+        speaker.speak(topGuess);
     }
 }
