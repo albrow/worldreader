@@ -210,23 +210,7 @@ public class MainActivity extends Activity {
 
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
-            Log.d(TAG, "Inside onPictureTaken");
-            File pictureFile = getOutputMediaFile(MEDIA_TYPE_IMAGE);
-            if (pictureFile == null){
-                Log.d(TAG, "Error creating media file, check storage permissions!");
-                return;
-            }
-
-            try {
-                FileOutputStream fos = new FileOutputStream(pictureFile);
-                fos.write(data);
-                fos.close();
-                pm.run(pictureFile);
-            } catch (FileNotFoundException e) {
-                Log.d(TAG, "File not found: " + e.getMessage());
-            } catch (IOException e) {
-                Log.d(TAG, "Error accessing file: " + e.getMessage());
-            }
+            pm.run(data);
             camera.startPreview();
         }
     };

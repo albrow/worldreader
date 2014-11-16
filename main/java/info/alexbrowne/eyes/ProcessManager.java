@@ -37,7 +37,7 @@ public class ProcessManager {
         processSem.release();
     }
 
-    public void run(File imageFile) {
+    public void run(byte[] imageData) {
         try {
             processSem.acquire();
         } catch (InterruptedException e) {
@@ -46,7 +46,7 @@ public class ProcessManager {
         isReady = false;
         processSem.release();
         p = new ImageProcessor(speaker, this);
-        p.execute(imageFile);
+        p.execute(imageData);
     }
 
     public void cancel(boolean mayInterruptIfRunning) {

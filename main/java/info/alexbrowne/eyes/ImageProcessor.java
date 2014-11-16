@@ -9,6 +9,8 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.mime.content.ByteArrayBody;
+import org.apache.http.entity.mime.content.ContentBody;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONArray;
@@ -23,7 +25,7 @@ import java.util.ArrayList;
 /**
  * Created by alex on 11/15/14.
  */
-public class ImageProcessor extends AsyncTask<File, Void, Void> {
+public class ImageProcessor extends AsyncTask<byte[], Void, Void> {
 
     private static String TAG = "ImageProcessor";
     private final double CONFIDENCE_THRESHOLD = 0.03;
@@ -36,15 +38,15 @@ public class ImageProcessor extends AsyncTask<File, Void, Void> {
     }
 
     @Override
-    protected Void doInBackground(File... imageFile) {
+    protected Void doInBackground(byte[]... imageData) {
         String rawData = "";
         try {
             HttpClient httpClient = new DefaultHttpClient();
             HttpPost postRequest = new HttpPost(
                     "http://www.clarifai.com/demo/upload/");
-            FileBody bin = new FileBody(imageFile[0]);
             MultipartEntity reqEntity = new MultipartEntity(
                     HttpMultipartMode.BROWSER_COMPATIBLE);
+            ContentBody bin = new ByteArrayBody(imageData[0], "image.jpg");
             reqEntity.addPart("files[]", bin);
             postRequest.setEntity(reqEntity);
             HttpResponse response = httpClient.execute(postRequest);
