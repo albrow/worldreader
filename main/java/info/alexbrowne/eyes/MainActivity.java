@@ -20,6 +20,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends Activity {
     private static String TAG = "MainActivity";
@@ -32,6 +34,11 @@ public class MainActivity extends Activity {
     private final int CHECK_CODE = 0x1;
 
     private Speaker speaker;
+
+    private boolean capturing = false;
+    private Timer timer;
+
+    private ProcessManager pm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +54,10 @@ public class MainActivity extends Activity {
         Context mContext = getApplicationContext();
 
         this.speaker = new Speaker(mContext);
+
+        this.timer = new Timer();
+
+        this.pm = new ProcessManager(speaker);
 
         // Create an instance of Camera
         mCamera = getCameraInstance();
@@ -72,7 +83,8 @@ public class MainActivity extends Activity {
             case KeyEvent.KEYCODE_VOLUME_UP:
                 if (event.getAction() == KeyEvent.ACTION_DOWN) {
                     Log.i(TAG, "Volume Up!");
-                    mCamera.takePicture(null, null, mPicture);
+                    toggleCapture();
+                    // mCamera.takePicture(null, null, mPicture);
                     return true;
                 } else {
                     return true;
@@ -80,13 +92,39 @@ public class MainActivity extends Activity {
             case KeyEvent.KEYCODE_VOLUME_DOWN:
                 if (event.getAction() == KeyEvent.ACTION_DOWN) {
                     Log.i(TAG, "Volume Down!");
-                    mCamera.takePicture(null, null, mPicture);
+                    toggleCapture();
+                    // mCamera.takePicture(null, null, mPicture);
                     return true;
                 } else {
                     return true;
                 }
             default:
                 return super.dispatchKeyEvent(event);
+        }
+    }
+
+    public void toggleCapture() {
+        if (!capturing) {
+            capturing = true;
+            speaker.allow(true);
+            speaker.speak("Beginning capture");
+            timer.scheduleAtFixedRate(new TimerTask() {
+                @Override
+                public void run() {
+                    if (pm.isReady() && !speaker.isSpeaking()) {
+                        Log.d(TAG, "READY");
+                        mCamera.takePicture(null, null, mPicture);
+                    } else {
+                        Log.d(TAG, "NOT READY");
+                    }
+                }
+            }, 0, 100);
+        } else {
+            timer.cancel();
+            pm.cancel(true);
+            capturing = false;
+            speaker.allow(true);
+            speaker.speak("Stopping capture");
         }
     }
 
@@ -148,7 +186,7 @@ public class MainActivity extends Activity {
                 FileOutputStream fos = new FileOutputStream(pictureFile);
                 fos.write(data);
                 fos.close();
-                new ImageProcessor(speaker).execute(pictureFile);
+                pm.run(pictureFile);
             } catch (FileNotFoundException e) {
                 Log.d(TAG, "File not found: " + e.getMessage());
             } catch (IOException e) {

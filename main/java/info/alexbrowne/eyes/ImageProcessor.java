@@ -28,9 +28,11 @@ public class ImageProcessor extends AsyncTask<File, Void, Void> {
     private static String TAG = "ImageProcessor";
     private final double CONFIDENCE_THRESHOLD = 0.03;
     private Speaker speaker;
+    private ProcessManager pm;
 
-    public ImageProcessor(Speaker speaker) {
+    public ImageProcessor(Speaker speaker, ProcessManager pm) {
         this.speaker = speaker;
+        this.pm = pm;
     }
 
     @Override
@@ -99,5 +101,10 @@ public class ImageProcessor extends AsyncTask<File, Void, Void> {
             speaker.speak(phrase);
         }
         return null;
+    }
+
+    @Override
+    protected void onPostExecute(Void nothing) {
+        pm.setReady(true);
     }
 }

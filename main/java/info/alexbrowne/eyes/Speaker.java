@@ -40,7 +40,6 @@ public class Speaker implements TextToSpeech.OnInitListener {
     }
 
     public void speak(String text){
-
         // Speak only if the TTS is ready
         // and the user has allowed speech
 
@@ -50,6 +49,10 @@ public class Speaker implements TextToSpeech.OnInitListener {
                     String.valueOf(AudioManager.STREAM_NOTIFICATION));
             tts.speak(text, TextToSpeech.QUEUE_ADD, hash);
         }
+    }
+
+    public boolean isSpeaking() {
+        return tts.isSpeaking();
     }
 
     public void pause(int duration){
