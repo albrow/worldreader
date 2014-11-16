@@ -58,7 +58,6 @@ public class MainActivity extends Activity {
         Context mContext = getApplicationContext();
         this.vibrator = (Vibrator) mContext.getSystemService(Context.VIBRATOR_SERVICE);
         this.speaker = new Speaker(mContext);
-        this.timer = new Timer();
         this.pm = new ProcessManager(speaker);
         setUpCamera();
 
@@ -98,6 +97,7 @@ public class MainActivity extends Activity {
             capturing = true;
             speaker.allow(true);
             speaker.speak("Beginning capture");
+            timer = new Timer();
             timer.scheduleAtFixedRate(new TimerTask() {
                 @Override
                 public void run() {
@@ -125,6 +125,7 @@ public class MainActivity extends Activity {
             capturing = false;
             speaker.allow(true);
             speaker.speak("Stopping capture");
+            speaker.allow(false);
         }
     }
 
