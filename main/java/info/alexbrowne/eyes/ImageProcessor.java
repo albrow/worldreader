@@ -93,7 +93,7 @@ public class ImageProcessor extends AsyncTask<File, Void, Void> {
         Log.d(TAG, "top guesses: " + topGuesses);
         speaker.allow(true);
         if (topGuesses.size() == 0) {
-            speaker.speak("Unkown object");
+            speaker.speak("Unknown object");
         } else if (topGuesses.size() == 1) {
             speaker.speak(topGuesses.get(0).toString());
         } else {
