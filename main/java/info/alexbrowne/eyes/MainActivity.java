@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.StrictMode;
 import android.speech.tts.TextToSpeech;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -16,6 +17,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
 
+import org.apache.commons.codec.binary.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -34,6 +36,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 
 public class MainActivity extends Activity {
@@ -46,9 +49,9 @@ public class MainActivity extends Activity {
 
     private final int CHECK_CODE = 0x1;
 
-    private TextToSpeech tts;
-
     private Speaker speaker;
+
+    private final double CONFIDENCE_THRESHHOLD = 0.03;
 
     StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
 
@@ -260,20 +263,31 @@ public class MainActivity extends Activity {
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        String topGuess = "";
+        ArrayList<Guess> topGuesses = new ArrayList<Guess>();
         try {
-            JSONArray guesses = jObject.getJSONArray("files").getJSONObject(0).getJSONArray("predicted_classes");
-            for (int i = 0; i < guesses.length(); i++) {
-                String guess = guesses.getString(i);
-                Log.e(TAG, guess);
+            JSONObject result = jObject.getJSONArray("files").getJSONObject(0);
+            JSONArray values = result.getJSONArray("predicted_classes");
+            JSONArray confidences = result.getJSONArray("predicted_probs");
+            for (int i = 0; i < values.length(); i++) {
+                Guess guess = new Guess(values.getString(i), confidences.getString(i));
+                if (guess.getConfidence() >= CONFIDENCE_THRESHHOLD) {
+                    topGuesses.add(guess);
+                }
             }
-            topGuess = guesses.getString(0);
         } catch (JSONException e) {
             e.printStackTrace();
         }
 
-        // Speak the first result
+        // Speak the top results
+        Log.d(TAG, "top guesses: " + topGuesses);
         speaker.allow(true);
-        speaker.speak(topGuess);
+        if (topGuesses.size() == 0) {
+            speaker.speak("Unkown object");
+        } else if (topGuesses.size() == 1) {
+            speaker.speak(topGuesses.get(0).toString());
+        } else {
+            String phrase = TextUtils.join(" or ", topGuesses.subList(0, Math.min(3, topGuesses.size())));
+            speaker.speak(phrase);
+        }
     }
 }
