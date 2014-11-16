@@ -29,6 +29,8 @@ public class ProcessManager {
     }
 
     public void cancel(boolean mayInterruptIfRunning) {
-        p.cancel(mayInterruptIfRunning);
+        if (p != null) {
+            p.cancel(mayInterruptIfRunning);
+        }
     }
 }

@@ -59,18 +59,8 @@ public class MainActivity extends Activity {
 
         this.pm = new ProcessManager(speaker);
 
-        // Create an instance of Camera
-        mCamera = getCameraInstance();
+        setUpCamera();
 
-        // Create our Preview view and set it as the content of our activity.
-        mPreview = new CameraPreview(this, mCamera);
-        FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
-        preview.addView(mPreview);
-        preview.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                | View.SYSTEM_UI_FLAG_FULLSCREEN
-                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
 
         // Check if a TTS engine is installed
         checkTTS();
@@ -131,11 +121,22 @@ public class MainActivity extends Activity {
     private void setUpCamera() {
         // Create an instance of Camera
         mCamera = getCameraInstance();
+        Camera.Parameters parameters = mCamera.getParameters();
+        parameters.setJpegQuality(50);
+        Camera.Size smallestSize = getSmallestPictureSize(parameters);
+        Log.i(TAG, "smallestSize: " + smallestSize.width + ", " + smallestSize.height);
+        parameters.setPictureSize(smallestSize.width, smallestSize.height);
+        parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
 
         // Create our Preview view and set it as the content of our activity.
         mPreview = new CameraPreview(this, mCamera);
         FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
         preview.addView(mPreview);
+        preview.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
     }
 
     private void checkTTS(){
@@ -157,11 +158,32 @@ public class MainActivity extends Activity {
         }
     }
 
+    private Camera.Size getSmallestPictureSize(Camera.Parameters parameters) {
+        Camera.Size result=null;
+
+        for (Camera.Size size : parameters.getSupportedPictureSizes()) {
+            if (result == null) {
+                result=size;
+            }
+            else {
+                int resultArea=result.width * result.height;
+                int newArea=size.width * size.height;
+
+                if (newArea < resultArea) {
+                    result=size;
+                }
+            }
+        }
+
+        return(result);
+    }
+
     @Override
     protected void onDestroy() {
         Log.i(TAG, "onDestroy");
         super.onDestroy();
         speaker.destroy();
+        pm.cancel(true);
     }
 
     @Override
