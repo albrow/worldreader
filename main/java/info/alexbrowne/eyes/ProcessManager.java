@@ -1,6 +1,5 @@
 package info.alexbrowne.eyes;
 
-import java.io.File;
 import java.util.concurrent.Semaphore;
 
 /**
