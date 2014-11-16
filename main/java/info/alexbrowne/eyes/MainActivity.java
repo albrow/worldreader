@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Vibrator;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -22,6 +23,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Semaphore;
 
 public class MainActivity extends Activity {
     private static String TAG = "MainActivity";
@@ -40,6 +42,10 @@ public class MainActivity extends Activity {
 
     private ProcessManager pm;
 
+    private Vibrator vibrator;
+
+    private Semaphore imageSem = new Semaphore(1);
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -52,15 +58,11 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         Context mContext = getApplicationContext();
-
+        this.vibrator = (Vibrator) mContext.getSystemService(Context.VIBRATOR_SERVICE);
         this.speaker = new Speaker(mContext);
-
         this.timer = new Timer();
-
         this.pm = new ProcessManager(speaker);
-
         setUpCamera();
-
 
         // Check if a TTS engine is installed
         checkTTS();
@@ -101,14 +103,24 @@ public class MainActivity extends Activity {
             timer.scheduleAtFixedRate(new TimerTask() {
                 @Override
                 public void run() {
+                    try {
+                        Log.d(TAG, "waiting for acquire");
+                        imageSem.acquire();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                     if (pm.isReady() && !speaker.isSpeaking()) {
                         Log.d(TAG, "READY");
+                        vibrator.vibrate(100);
+                        pm.setReady(false);
                         mCamera.takePicture(null, null, mPicture);
                     } else {
                         Log.d(TAG, "NOT READY");
                     }
+                    Log.d(TAG, "releasing");
+                    imageSem.release();
                 }
-            }, 0, 100);
+            }, 0, 200);
         } else {
             timer.cancel();
             pm.cancel(true);
