@@ -9,8 +9,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
@@ -38,16 +36,13 @@ public class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        Log.i(TAG, "onCreate");
+
         setContentView(R.layout.activity_main);
 
         Context mContext = getApplicationContext();
 
         this.speaker = new Speaker(mContext);
-
-        // Check if we can access the camera
-        if (!checkCameraHardware(mContext)) {
-            Log.d(TAG, "Cannot access camera hardware!");
-        }
 
         // Create an instance of Camera
         mCamera = getCameraInstance();
@@ -73,6 +68,16 @@ public class MainActivity extends Activity {
         checkTTS();
     }
 
+    private void setUpCamera() {
+        // Create an instance of Camera
+        mCamera = getCameraInstance();
+
+        // Create our Preview view and set it as the content of our activity.
+        mPreview = new CameraPreview(this, mCamera);
+        FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
+        preview.addView(mPreview);
+    }
+
     private void checkTTS(){
         Intent check = new Intent();
         check.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
@@ -94,20 +99,16 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        Log.i(TAG, "onDestroy");
         super.onDestroy();
         speaker.destroy();
-        releaseCamera();
     }
 
-    /** Check if this device has a camera */
-    private boolean checkCameraHardware(Context context) {
-        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)){
-            // this device has a camera
-            return true;
-        } else {
-            // no camera on this device
-            return false;
-        }
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        Log.i(TAG, "onRestart");
+        setUpCamera();
     }
 
     private Camera.PictureCallback mPicture = new Camera.PictureCallback() {
